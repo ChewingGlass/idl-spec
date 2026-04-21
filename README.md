@@ -16,8 +16,10 @@ This first version of the specification is based on the [`anchor-lang-idl-spec`]
 
 Frameworks that generate IDLs conforming to this spec:
 
-- **[Anchor](https://www.anchor-lang.com/)** -- The most widely adopted Solana program framework. Generates IDLs at build time via `anchor build`.
-- **[Quasar](https://github.com/blueshift-gg/quasar)** -- Zero-copy, zero-allocation Solana program framework by Blueshift. Generates IDLs via `quasar build`.
+- **[Anchor](https://anchor-lang.com/)** -- Solana program framework maintained by Ottersec. Generates IDLs at build time via `anchor build`.
+- **[Quasar](https://quasar-lang.com/)** -- Solana program framework maintained by Blueshift. Generates IDLs at build time via `quasar build`.
+
+- Native or [Pinocchio](https://github.com/anza-xyz/pinocchio) programs can also generate [Codama IDLs](https://github.com/codama-idl/codama#getting-a-codama-idl) via Codama macros. This Solana IDL spec can be converted to Codama IDLs if needed.
 
 ### Client Generation
 
