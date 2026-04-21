@@ -44,7 +44,7 @@ codama run --all
 
 #### C# 
 
-You can generate C# clients for your program via the [Magic block sdk]`https://github.com/magicblock-labs/Solana.Unity.Anchor`.
+You can generate C# clients for your program via the [Magic block sdk](https://github.com/magicblock-labs/Solana.Unity.Anchor).
 
 ```bash
 dotnet anchorgen -i idl/file.json -o src/ProgramCode.cs
@@ -52,7 +52,7 @@ dotnet anchorgen -i idl/file.json -o src/ProgramCode.cs
 
 ### Upload & Manage On-Chain Metadata
 
-**[Program Metadata](https://github.com/solana-program/program-metadata)** -- Attach IDLs, security.txt, and other metadata to any Solana program via on-chain PDA accounts.
+**[Program Metadata](https://github.com/solana-program/program-metadata)** -- Attach IDLs, security.txt, and other metadata to any Solana program via on-chain PDA accounts. Also offers multisig support. 
 
 ```bash
 # Upload an IDL to your program
