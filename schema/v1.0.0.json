@@ -294,7 +294,8 @@
           { "$ref": "#/$defs/types/IdlTypeStruct" },
           { "$ref": "#/$defs/types/IdlTypeDefined" },
           { "$ref": "#/$defs/types/IdlTypeGeneric" },
-          { "$ref": "#/$defs/types/IdlTypeSemantic" }
+          { "$ref": "#/$defs/types/IdlTypeSemantic" },
+          { "$ref": "#/$defs/types/IdlTypePadding" }
         ]
       },
       "IdlPrimitive": {
@@ -433,6 +434,15 @@
           "type": { "const": "semantic" },
           "inner": { "$ref": "#/$defs/types/IdlType" },
           "format": { "$ref": "#/$defs/formats/IdlSemanticFormat" }
+        }
+      },
+      "IdlTypePadding": {
+        "type": "object",
+        "required": ["type", "bytes"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "padding" },
+          "bytes": { "type": "integer", "minimum": 0 }
         }
       },
       "IdlArrayCount": {
