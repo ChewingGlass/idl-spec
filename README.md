@@ -91,7 +91,7 @@ idl-spec/
 
 Contributions are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for full details.
 
-- **Spec changes** go through the [RFC process](CONTRIBUTING.md#rfc-process) -- open an issue using the RFC template, allow at least 2 weeks for discussion, then submit a PR once accepted.
+- **Spec changes** go through the [RFC process](CONTRIBUTING.md#rfc-process) -- open an issue using the RFC template, allow at least 2 weeks for discussion, then submit a PR once accepted. For breaking changes lets do 4 weeks. 
 - **Tooling additions, examples, and editorial fixes** can be submitted as a standard pull request.
 
 ## License

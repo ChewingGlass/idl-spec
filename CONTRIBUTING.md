@@ -21,7 +21,7 @@ Create a new issue using the **RFC** issue template. Fill in all sections: summa
 
 ### 2. Discussion Period
 
-Once opened, the RFC enters a discussion period of **at least 1 week**. During this time, maintainers and community members will provide feedback. Be prepared to revise the proposal based on discussion. The issue will be labeled `rfc` by a maintainer.
+Once opened, the RFC enters a discussion period of **at least 2 week** for normal changes and **at least 4 weeks** for breaking changes. During this time, maintainers and community members will provide feedback. Be prepared to revise the proposal based on discussion. The issue will be labeled `rfc` by a maintainer.
 
 An RFC may be:
 - **Accepted** -- the proposal is approved and ready for implementation.
