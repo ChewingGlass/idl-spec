@@ -120,23 +120,24 @@
     },
     "IdlDeployments": {
       "type": "object",
+      "required": ["mainnet", "testnet", "devnet", "localnet"],
       "additionalProperties": false,
       "properties": {
         "mainnet": {
-          "type": "string",
-          "description": "Mainnet-beta program address."
+          "type": ["string", "null"],
+          "description": "Mainnet-beta program address, or null when absent."
         },
         "testnet": {
-          "type": "string",
-          "description": "Testnet program address."
+          "type": ["string", "null"],
+          "description": "Testnet program address, or null when absent."
         },
         "devnet": {
-          "type": "string",
-          "description": "Devnet program address."
+          "type": ["string", "null"],
+          "description": "Devnet program address, or null when absent."
         },
         "localnet": {
-          "type": "string",
-          "description": "Localnet program address."
+          "type": ["string", "null"],
+          "description": "Localnet program address, or null when absent."
         }
       }
     },
