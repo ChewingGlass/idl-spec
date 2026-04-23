@@ -20,9 +20,6 @@
   "instructions": [
     {
       "name": "increment",
-      "discriminators": [
-        { "type": "constant", "bytes": [11, 18, 104, 9, 104, 174, 59, 33] }
-      ],
       "accounts": [
         {
           "name": "counter",
@@ -31,7 +28,6 @@
         },
         {
           "name": "authority",
-          "address": { "type": "field", "path": "counter.authority" },
           "messageSigner": {
             "template": "Increment counter {counter} by {amount}",
             "placeholders": {
@@ -44,19 +40,18 @@
               }
             }
           },
+          "address": { "type": "field", "path": "counter.authority" },
           "expiresAt": { "type": "argument", "path": "expiresAt" }
         }
       ],
       "args": [
+        { "name": "_disc", "type": { "type": "constant", "bytes": [11, 18, 104, 9, 104, 174, 59, 33] } },
         { "name": "amount", "type": "u64" },
         { "name": "expiresAt", "type": "i64" }
       ]
     },
     {
       "name": "initialize",
-      "discriminators": [
-        { "type": "constant", "bytes": [175, 175, 109, 31, 13, 152, 155, 237] }
-      ],
       "accounts": [
         {
           "name": "counter",
@@ -74,19 +69,19 @@
           "address": { "type": "constant", "value": "11111111111111111111111111111111" }
         }
       ],
-      "args": []
+      "args": [
+        { "name": "_disc", "type": { "type": "constant", "bytes": [175, 175, 109, 31, 13, 152, 155, 237] } }
+      ]
     }
   ],
   "accounts": [
     {
       "name": "Counter",
       "pda": "counter",
-      "discriminators": [
-        { "type": "constant", "bytes": [255, 176, 4, 245, 188, 253, 124, 25] }
-      ],
       "data": {
         "type": "struct",
         "fields": [
+          { "name": "_disc", "type": { "type": "constant", "bytes": [255, 176, 4, 245, 188, 253, 124, 25] } },
           { "name": "authority", "type": "pubkey" },
           { "name": "count", "type": "u64" },
           { "name": "bump", "type": "u8" }
@@ -97,12 +92,10 @@
   "events": [
     {
       "name": "CounterUpdated",
-      "discriminators": [
-        { "type": "constant", "bytes": [56, 210, 136, 13, 88, 67, 151, 167] }
-      ],
       "data": {
         "type": "struct",
         "fields": [
+          { "name": "_disc", "type": { "type": "constant", "bytes": [56, 210, 136, 13, 88, 67, 151, 167] } },
           { "name": "counter", "type": "pubkey" },
           { "name": "authority", "type": "pubkey" },
           { "name": "oldValue", "type": "u64" },

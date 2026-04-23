@@ -75,16 +75,11 @@
     "instruction": {
       "IdlInstruction": {
         "type": "object",
-        "required": ["name", "discriminators", "accounts"],
+        "required": ["name", "accounts"],
         "additionalProperties": false,
         "properties": {
           "name": { "type": "string" },
           "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
-          "discriminators": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" },
-            "minItems": 1
-          },
           "accounts": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionAccount" } },
           "args": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionArg" }, "default": [] },
           "returns": { "$ref": "#/$defs/types/IdlType" },
@@ -102,11 +97,6 @@
           "byteDeltas": {
             "type": "array",
             "items": { "$ref": "#/$defs/instruction/IdlByteDelta" },
-            "default": []
-          },
-          "subInstructions": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/instruction/IdlInstruction" },
             "default": []
           }
         }
@@ -227,10 +217,6 @@
         "name": { "type": "string" },
         "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
         "data": { "$ref": "#/$defs/types/IdlTypeStruct" },
-        "discriminators": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" }
-        },
         "pda": { "type": "string" },
         "size": { "type": "integer", "minimum": 0 }
       }
@@ -238,17 +224,12 @@
 
     "IdlEvent": {
       "type": "object",
-      "required": ["name", "data", "discriminators"],
+      "required": ["name", "data"],
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
-        "data": { "$ref": "#/$defs/types/IdlTypeStruct" },
-        "discriminators": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" },
-          "minItems": 1
-        }
+        "data": { "$ref": "#/$defs/types/IdlTypeStruct" }
       }
     },
 
@@ -261,46 +242,6 @@
         "name": { "type": "string" },
         "message": { "type": "string" },
         "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
-      }
-    },
-
-    "discriminator": {
-      "IdlDiscriminator": {
-        "oneOf": [
-          {
-            "type": "object",
-            "required": ["type", "bytes"],
-            "additionalProperties": false,
-            "properties": {
-              "type": { "const": "constant" },
-              "bytes": {
-                "type": "array",
-                "items": { "type": "integer", "minimum": 0, "maximum": 255 }
-              },
-              "offset": { "type": "integer", "minimum": 0, "default": 0 }
-            }
-          },
-          {
-            "type": "object",
-            "required": ["type", "path"],
-            "additionalProperties": false,
-            "properties": {
-              "type": { "const": "field" },
-              "path": { "type": "string" },
-              "offset": { "type": "integer", "minimum": 0 },
-              "value": {}
-            }
-          },
-          {
-            "type": "object",
-            "required": ["type", "value"],
-            "additionalProperties": false,
-            "properties": {
-              "type": { "const": "size" },
-              "value": { "type": "integer", "minimum": 0 }
-            }
-          }
-        ]
       }
     },
 
@@ -322,6 +263,7 @@
           { "$ref": "#/$defs/types/IdlTypeGeneric" },
           { "$ref": "#/$defs/types/IdlTypeSemantic" },
           { "$ref": "#/$defs/types/IdlTypePadding" },
+          { "$ref": "#/$defs/types/IdlTypeConstant" },
           { "$ref": "#/$defs/types/IdlTypeFixedSize" },
           { "$ref": "#/$defs/types/IdlTypeHiddenPrefix" },
           { "$ref": "#/$defs/types/IdlTypeHiddenSuffix" },
@@ -478,6 +420,18 @@
         "properties": {
           "type": { "const": "padding" },
           "bytes": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "IdlTypeConstant": {
+        "type": "object",
+        "required": ["type", "bytes"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "constant" },
+          "bytes": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
         }
       },
       "IdlTypeBoolean": {
