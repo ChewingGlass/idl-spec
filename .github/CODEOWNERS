@@ -1,0 +1,6 @@
+# Default owners for everything in the repo
+*               @tiago18c @Woody4618 @L0STE_ @deanmlittle @chen-robert @lorisleiva
+
+# Spec and schema changes require review
+/specs/         @tiago18c @Woody4618 @L0STE_ @deanmlittle @chen-robert @lorisleiva
+/schema/        @tiago18c @Woody4618 @L0STE_ @deanmlittle @chen-robert @lorisleiva
