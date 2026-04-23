@@ -8,7 +8,8 @@ This first version of the specification is based on the [`anchor-lang-idl-spec`]
 
 | Version | Status     | Document | JSON Schema |
 |---------|------------|----------|-------------|
-| `0.1.0` | Current    | [`specs/v0.1.0.md`](specs/v0.1.0.md) | [`schema/v0.1.0.json`](schema/v0.1.0.json) |
+| `1.0.0` | Current    | [`specs/v1.0.0.md`](specs/v1.0.0.md) | [`schema/v1.0.0.json`](schema/v1.0.0.json) |
+| `0.1.0` | Legacy     | [`specs/v0.1.0.md`](specs/v0.1.0.md) | [`schema/v0.1.0.json`](schema/v0.1.0.json) |
 
 ## Ecosystem Tools
 
@@ -76,15 +77,19 @@ npx tsx src/cli.ts <program-address> --rpc <rpc-url> --type both --dump-idls ./i
 
 ```
 idl-spec/
-├── README.md                   # This file
-├── CONTRIBUTING.md             # Contribution guidelines and RFC process
-├── LICENSE                     # MIT license
+├── README.md                      # This file
+├── CONTRIBUTING.md                # Contribution guidelines and RFC process
+├── LICENSE                        # MIT license
 ├── schema/
-│   └── v0.1.0.json             # JSON Schema for IDL validation
+│   ├── v1.0.0.json                # JSON Schema for v1.0.0 (current)
+│   └── v0.1.0.json                # JSON Schema for v0.1.0 (legacy)
 ├── specs/
-│   └── v0.1.0.md               # IDL spec v0.1.0
+│   ├── v1.0.0.md                  # IDL spec v1.0.0 (current)
+│   ├── v0.1.0.md                  # IDL spec v0.1.0 (legacy)
+│   └── COMPARISON.md              # Cross-framework comparison + design rationale
 └── examples/
-    └── counter.json            # Example IDL
+    ├── counter-v1.0.0.json        # Example IDL conforming to v1.0.0
+    └── counter-v0.1.0.json        # Example IDL conforming to v0.1.0
 ```
 
 ## Contributing

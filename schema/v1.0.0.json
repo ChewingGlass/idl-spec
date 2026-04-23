@@ -1,0 +1,846 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/solana-idl/idl-spec/schema/v1.0.0.json",
+  "title": "Solana IDL v1.0.0",
+  "description": "JSON Schema for Solana program Interface Description Language (IDL) files, spec version 1.0.0.",
+  "$ref": "#/$defs/Idl",
+
+  "$defs": {
+    "Idl": {
+      "type": "object",
+      "required": ["address", "metadata", "instructions"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "address": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata/IdlMetadata" },
+        "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "instructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstruction" } },
+        "accounts": { "type": "array", "items": { "$ref": "#/$defs/IdlAccount" }, "default": [] },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/IdlEvent" }, "default": [] },
+        "errors": { "type": "array", "items": { "$ref": "#/$defs/IdlErrorCode" }, "default": [] },
+        "types": { "type": "array", "items": { "$ref": "#/$defs/types/IdlTypeDef" }, "default": [] },
+        "pdas": { "type": "array", "items": { "$ref": "#/$defs/pda/IdlPda" }, "default": [] },
+        "additionalPrograms": { "type": "array", "items": { "$ref": "#/$defs/Idl" }, "default": [] }
+      }
+    },
+
+    "metadata": {
+      "IdlMetadata": {
+        "type": "object",
+        "required": ["name", "version", "spec", "generator"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "spec": { "type": "string", "const": "1.0.0" },
+          "generator": { "$ref": "#/$defs/metadata/IdlGenerator" },
+          "description": { "type": "string" },
+          "repository": { "type": "string" },
+          "contact": { "type": "string" },
+          "dependencies": { "type": "array", "items": { "$ref": "#/$defs/metadata/IdlDependency" }, "default": [] },
+          "deployments": { "$ref": "#/$defs/metadata/IdlDeployments" }
+        }
+      },
+      "IdlGenerator": {
+        "type": "object",
+        "required": ["name", "version"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" }
+        }
+      },
+      "IdlDependency": {
+        "type": "object",
+        "required": ["name", "version"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" }
+        }
+      },
+      "IdlDeployments": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mainnet": { "type": "string" },
+          "testnet": { "type": "string" },
+          "devnet": { "type": "string" },
+          "localnet": { "type": "string" }
+        }
+      }
+    },
+
+    "instruction": {
+      "IdlInstruction": {
+        "type": "object",
+        "required": ["name", "discriminators", "accounts"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "discriminators": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" },
+            "minItems": 1
+          },
+          "accounts": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionAccount" } },
+          "args": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionArg" }, "default": [] },
+          "returns": { "$ref": "#/$defs/types/IdlType" },
+          "remainingAccounts": { "$ref": "#/$defs/instruction/IdlRemainingAccounts" },
+          "preInstructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlPrePostIx" }, "default": [] },
+          "postInstructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlPrePostIx" }, "default": [] }
+        }
+      },
+      "IdlInstructionAccount": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "writable": { "type": "boolean", "default": false },
+          "signer": { "type": "boolean", "default": false },
+          "messageSigner": { "$ref": "#/$defs/instruction/IdlMessageSigner" },
+          "optional": { "type": "boolean", "default": false },
+          "address": { "$ref": "#/$defs/expressions/IdlAddressExpression" },
+          "default": { "$ref": "#/$defs/values/IdlDefaultValue" },
+          "group": { "type": "string" },
+          "expiresAt": { "$ref": "#/$defs/expressions/IdlPathExpression" }
+        },
+        "allOf": [
+          {
+            "if": { "required": ["messageSigner"] },
+            "then": { "required": ["expiresAt"] }
+          },
+          {
+            "not": {
+              "allOf": [
+                { "properties": { "signer": { "const": true } }, "required": ["signer"] },
+                { "required": ["messageSigner"] }
+              ]
+            }
+          }
+        ]
+      },
+      "IdlInstructionArg": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "type": { "$ref": "#/$defs/types/IdlType" },
+          "default": { "$ref": "#/$defs/values/IdlDefaultValue" }
+        }
+      },
+      "IdlRemainingAccounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "shape": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/instruction/IdlRemainingAccountsEntry" }
+          }
+        }
+      },
+      "IdlRemainingAccountsEntry": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "writable": { "type": "boolean", "default": false },
+          "signer": { "type": "boolean", "default": false },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
+        }
+      },
+      "IdlPrePostIx": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "mint", "owner", "payer"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "createAtaIdempotent" },
+              "mint": { "$ref": "#/$defs/expressions/IdlAddressExpression" },
+              "owner": { "$ref": "#/$defs/expressions/IdlAddressExpression" },
+              "payer": { "$ref": "#/$defs/expressions/IdlAddressExpression" }
+            }
+          }
+        ]
+      },
+      "IdlMessageSigner": {
+        "type": "object",
+        "required": ["template", "placeholders"],
+        "additionalProperties": false,
+        "properties": {
+          "template": { "type": "string" },
+          "placeholders": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/$defs/instruction/IdlMessageSignerPlaceholder" }
+          }
+        }
+      },
+      "IdlMessageSignerPlaceholder": {
+        "type": "object",
+        "required": ["from"],
+        "additionalProperties": false,
+        "properties": {
+          "from": { "$ref": "#/$defs/expressions/IdlPathExpression" },
+          "format": { "$ref": "#/$defs/formats/IdlSemanticFormat" }
+        }
+      }
+    },
+
+    "IdlAccount": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "data": { "$ref": "#/$defs/types/IdlTypeStruct" },
+        "discriminators": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" }
+        },
+        "pda": { "type": "string" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "IdlEvent": {
+      "type": "object",
+      "required": ["name", "data", "discriminators"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "data": { "$ref": "#/$defs/types/IdlTypeStruct" },
+        "discriminators": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/discriminator/IdlDiscriminator" },
+          "minItems": 1
+        }
+      }
+    },
+
+    "IdlErrorCode": {
+      "type": "object",
+      "required": ["code", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" },
+        "message": { "type": "string" },
+        "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+
+    "discriminator": {
+      "IdlDiscriminator": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "bytes"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "constant" },
+              "bytes": {
+                "type": "array",
+                "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+              },
+              "offset": { "type": "integer", "minimum": 0, "default": 0 }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "path"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "field" },
+              "path": { "type": "string" },
+              "value": {}
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "size" },
+              "value": { "type": "integer", "minimum": 0 }
+            }
+          }
+        ]
+      }
+    },
+
+    "types": {
+      "IdlType": {
+        "oneOf": [
+          { "$ref": "#/$defs/types/IdlPrimitive" },
+          { "$ref": "#/$defs/types/IdlTypeNumber" },
+          { "$ref": "#/$defs/types/IdlTypeOption" },
+          { "$ref": "#/$defs/types/IdlTypeArray" },
+          { "$ref": "#/$defs/types/IdlTypeString" },
+          { "$ref": "#/$defs/types/IdlTypeBytes" },
+          { "$ref": "#/$defs/types/IdlTypeMap" },
+          { "$ref": "#/$defs/types/IdlTypeSet" },
+          { "$ref": "#/$defs/types/IdlTypeTuple" },
+          { "$ref": "#/$defs/types/IdlTypeStruct" },
+          { "$ref": "#/$defs/types/IdlTypeDefined" },
+          { "$ref": "#/$defs/types/IdlTypeGeneric" },
+          { "$ref": "#/$defs/types/IdlTypeSemantic" }
+        ]
+      },
+      "IdlPrimitive": {
+        "type": "string",
+        "enum": [
+          "bool",
+          "u8", "i8", "u16", "i16", "u32", "i32",
+          "u64", "i64", "u128", "i128", "u256", "i256",
+          "f32", "f64",
+          "shortU16",
+          "pubkey",
+          "bytes",
+          "string"
+        ]
+      },
+      "IdlTypeNumber": {
+        "type": "object",
+        "required": ["type", "format"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "number" },
+          "format": {
+            "type": "string",
+            "enum": [
+              "u8", "i8", "u16", "i16", "u32", "i32",
+              "u64", "i64", "u128", "i128", "u256", "i256",
+              "f32", "f64",
+              "shortU16"
+            ]
+          },
+          "endian": { "type": "string", "enum": ["le", "be"], "default": "le" }
+        }
+      },
+      "IdlTypeOption": {
+        "type": "object",
+        "required": ["type", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "option" },
+          "value": { "$ref": "#/$defs/types/IdlType" }
+        }
+      },
+      "IdlTypeArray": {
+        "type": "object",
+        "required": ["type", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "array" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "count": { "$ref": "#/$defs/types/IdlArrayCount" }
+        }
+      },
+      "IdlTypeString": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "string" },
+          "encoding": { "type": "string", "enum": ["utf8", "base58", "base64"], "default": "utf8" },
+          "count": { "$ref": "#/$defs/types/IdlArrayCount" }
+        }
+      },
+      "IdlTypeBytes": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "bytes" },
+          "count": { "$ref": "#/$defs/types/IdlArrayCount" }
+        }
+      },
+      "IdlTypeMap": {
+        "type": "object",
+        "required": ["type", "key", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "map" },
+          "key": { "$ref": "#/$defs/types/IdlType" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "count": { "$ref": "#/$defs/types/IdlArrayCount" }
+        }
+      },
+      "IdlTypeSet": {
+        "type": "object",
+        "required": ["type", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "set" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "count": { "$ref": "#/$defs/types/IdlArrayCount" }
+        }
+      },
+      "IdlTypeTuple": {
+        "type": "object",
+        "required": ["type", "elements"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "tuple" },
+          "elements": { "type": "array", "items": { "$ref": "#/$defs/types/IdlType" } }
+        }
+      },
+      "IdlTypeStruct": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "struct" },
+          "fields": { "type": "array", "items": { "$ref": "#/$defs/types/IdlField" }, "default": [] }
+        }
+      },
+      "IdlTypeDefined": {
+        "type": "object",
+        "required": ["type", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "defined" },
+          "name": { "type": "string" },
+          "program": { "type": "string" },
+          "generics": { "type": "array", "items": { "$ref": "#/$defs/types/IdlGenericArg" }, "default": [] }
+        }
+      },
+      "IdlTypeGeneric": {
+        "type": "object",
+        "required": ["type", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "generic" },
+          "name": { "type": "string" }
+        }
+      },
+      "IdlTypeSemantic": {
+        "type": "object",
+        "required": ["type", "inner", "format"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "semantic" },
+          "inner": { "$ref": "#/$defs/types/IdlType" },
+          "format": { "$ref": "#/$defs/formats/IdlSemanticFormat" }
+        }
+      },
+      "IdlArrayCount": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "prefix"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "prefixed" },
+              "prefix": { "type": "string", "enum": ["u8", "u16", "u32", "u64", "shortU16"] }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "fixed" },
+              "value": { "type": "integer", "minimum": 0 }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "remainder" }
+            }
+          }
+        ]
+      },
+      "IdlField": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "$ref": "#/$defs/types/IdlType" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
+        }
+      },
+      "IdlTypeDef": {
+        "type": "object",
+        "required": ["name", "shape"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "generics": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/types/IdlTypeDefGeneric" },
+            "default": []
+          },
+          "shape": { "$ref": "#/$defs/types/IdlTypeDefShape" }
+        }
+      },
+      "IdlTypeDefShape": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "struct" },
+              "fields": { "type": "array", "items": { "$ref": "#/$defs/types/IdlField" }, "default": [] }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "variants"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "enum" },
+              "variants": { "type": "array", "items": { "$ref": "#/$defs/types/IdlEnumVariant" } },
+              "size": { "$ref": "#/$defs/types/IdlTypeNumber" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "alias"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "alias" },
+              "alias": { "$ref": "#/$defs/types/IdlType" }
+            }
+          }
+        ]
+      },
+      "IdlEnumVariant": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "discriminator": { "type": "integer", "minimum": 0 },
+          "body": { "$ref": "#/$defs/types/IdlEnumVariantBody" }
+        }
+      },
+      "IdlEnumVariantBody": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["kind"],
+            "additionalProperties": false,
+            "properties": { "kind": { "const": "empty" } }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "elements"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "tuple" },
+              "elements": { "type": "array", "items": { "$ref": "#/$defs/types/IdlType" } }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "fields"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "struct" },
+              "fields": { "type": "array", "items": { "$ref": "#/$defs/types/IdlField" } }
+            }
+          }
+        ]
+      },
+      "IdlTypeDefGeneric": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["kind", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "type" },
+              "name": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "name", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "const" },
+              "name": { "type": "string" },
+              "type": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "IdlGenericArg": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["kind", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "type" },
+              "type": { "$ref": "#/$defs/types/IdlType" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["kind", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "const": "const" },
+              "value": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+
+    "expressions": {
+      "IdlPathExpression": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "path"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "argument" },
+              "path": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "account" },
+              "name": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name", "path"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "accountField" },
+              "name": { "type": "string" },
+              "path": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "IdlAddressExpression": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "constant" },
+              "value": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "path"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "field" },
+              "path": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+
+    "formats": {
+      "IdlSemanticFormat": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string" }
+        },
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "decimals"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "amount" },
+              "decimals": { "type": "integer", "minimum": 0 },
+              "symbol": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": { "type": { "const": "solAmount" } }
+          },
+          {
+            "type": "object",
+            "required": ["type", "unit"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "dateTime" },
+              "unit": { "type": "string", "enum": ["seconds", "milliseconds"] }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "pubkey" },
+              "truncate": { "type": "boolean", "default": false }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": { "type": { "const": "raw" } }
+          }
+        ]
+      }
+    },
+
+    "values": {
+      "IdlDefaultValue": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": { "type": { "const": "payer" } }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": { "type": { "const": "identity" } }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": { "type": { "const": "programId" } }
+          },
+          {
+            "type": "object",
+            "required": ["type", "account"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "accountBump" },
+              "account": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "pda" },
+              "name": { "type": "string" },
+              "bindings": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/expressions/IdlPathExpression" }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "account" },
+              "name": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "path"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "argument" },
+              "path": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "value", "valueType"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "constant" },
+              "value": {},
+              "valueType": { "$ref": "#/$defs/types/IdlType" }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "resolver" },
+              "name": { "type": "string" },
+              "params": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/expressions/IdlPathExpression" }
+              }
+            }
+          }
+        ]
+      }
+    },
+
+    "pda": {
+      "IdlPda": {
+        "type": "object",
+        "required": ["name", "seeds"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
+          "programId": { "type": "string" },
+          "seeds": { "type": "array", "items": { "$ref": "#/$defs/pda/IdlSeed" } }
+        }
+      },
+      "IdlSeed": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "bytes"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "constant" },
+              "bytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255 } }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "name", "valueType"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "variable" },
+              "name": { "type": "string" },
+              "valueType": { "$ref": "#/$defs/types/IdlType" },
+              "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

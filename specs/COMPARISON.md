@@ -360,6 +360,67 @@ Ordered roughly by impact:
 16. **`msg` vs `message` on errors.** Pick one; Codama requires the field, others don't.
 17. **Key renaming.** Minor but worth settling: `isWritable` (Codama) vs `writable` (everyone else); `isSigner` (Codama) vs `signer`; `arguments` (Codama) vs `args`; `publicKey` (Codama) vs `address` (everyone else); `definedTypes` (Codama) vs `types` (everyone else).
 18. **Pre/post instruction markers (§13.1).** In scope for v1? Separate future RFC? Reserved namespace only? Or explicitly out of scope forever because it makes IDLs Turing-complete?
+19. **Per-signer signing templates.** Should each signing account carry its own human-readable "what you're authorizing" template, folded directly into the `messageSigner` field so presence-of-the-field declares the signer role? A swap's maker and taker legitimately see different things — instruction-level templates force an artificial single-perspective view.
+20. **Message signers (signed-intent authorization).** Can an account authorize an instruction by ed25519-signing its own rendered template instead of signing the Solana transaction? If so: how to pin cross-implementation deterministic rendering; whether the signed content needs a domain preamble (EIP-712-style) for replay protection; how to express signature expiry.
+
+---
+
+## 15. Opinions (Noah)
+
+Answers to the debate topics in §14. These are a working set of positions to drive the RFC discussion — not final decisions.
+
+### Cross-cutting principles
+
+Several themes kept recurring. Pulled out here so they don't get lost in the per-topic answers:
+
+- **Optionality as a first-class idea.** Expressive features should be available but rarely *required*. Producers may emit; consumers may ignore. A minimal conforming IDL stays small; a rich producer can add detail without breaking anything downstream. Applies to contextual values (#4), semantic types (#11), remaining-accounts shape (#13), generics (#9), and Codama-style sugar in general.
+- **Tagged unions, never `string | object` mixes.** Every union should be a tagged object (`{ type: "constant", value: ... }` vs `{ type: "field", path: ... }`), not a fused primitive-or-object form. Covers #1, #8, and by extension the legacy `IdlArrayLen` (`number | { generic: string }`) which should be rewritten as `{ type: "fixed", value: N }` / `{ type: "generic", name: "N" }` in v1.
+- **Push layout into the type system.** If a field has a wire layout quirk (size prefix, endianness, fixed size, sentinel, padding), describe it via a type-node wrapper — not a sidecar `serialization` / `repr` hint. Covers #2, #3, #10, #15. The IDL should fully describe the serialization without needing to reference Rust-flavored type names or framework-specific assumptions.
+- **Inline at the point of use.** If a value matters (a seed, a discriminator, a default), describe it where it's used — not in a separate `constants` block. Covers #14, and reinforces #5 (first-class PDAs are the one exception where extraction > inlining because reuse is common).
+- **Anchor-compat where cheap; diverge where the ecosystem has already moved on.** Keep majority naming conventions (#17) and generics (#9) to minimize migration friction. But: adopt tagged discriminators (#1), drop serialization/repr hints (#10), and accept that zero-copy programs need first-class wire-layout expressivity (#2).
+
+### Answers
+
+| # | Topic | Position |
+|---|---|---|
+| 1 | Discriminator shape | **Codama-style tagged union.** `{ type: "constant", bytes: [...] }` \| `{ type: "field", path: "..." }` \| `{ type: "size", value: n }`. If Codama saw the need, there are real programs with exotic dispatch that need the expressivity. |
+| 2 | Explicit wire layout for dynamic containers | **Codama's `CountNode` wrappers.** The ecosystem is moving toward zero-copy; Quasar already requires explicit prefix widths. We need something expressive enough to describe any serialization — not just fixed Borsh. Whether Codama's exact shape is the right one is a v1 design question, but the axis of expressivity is non-negotiable. |
+| 3 | Endianness and number format | **Hybrid.** Keep bare strings (`"u64"`, `"i32"`) as shorthand for little-endian. Allow an explicit object form (e.g. `{ number: "u64", endian: "be" }`) when non-LE is needed. Add `shortU16` as a bare primitive. |
+| 4 | Default values on accounts/args | **Optional descriptive layer.** Contextual-value nodes (payer, identity, PDA, resolver, conditional) are permitted but never required. An IDL that describes only the wire is still conforming. Producers that want richer client generation may opt in. |
+| 5 | First-class PDAs | **Top-level `pdas: PdaNode[]`**, instructions reference by name. Additionally: optional canonical PDA ↔ account-type link (mirrors Codama's `AccountNode.pda?: PdaLinkNode`) — 99.9% of PDAs map 1:1 to an account type, so surfacing that relationship is nearly free. |
+| 6 | Multi-program IDLs | **Adopt `additionalPrograms[]`.** A program document can describe itself plus peer programs whose types/accounts it references. |
+| 7 | Composite accounts | **Flatten in the IDL, preserve grouping metadata.** Accounts appear as a flat list, but each carries its composite-group membership. Dot-path accessors (`token_accounts.mint`) remain valid for UX/docs. This matches the Anchor developer experience without forcing consumers to parse a tree. |
+| 8 | `address` as expression; drop `relations` | **Adopt.** `address` becomes a tagged union: `{ type: "constant", value: "<pubkey>" }` or `{ type: "field", path: "data.key" }`. `relations` disappears. (See also: cross-cutting principle on tagged unions.) |
+| 9 | Generics | **Keep as optional / Anchor-compat.** Producers that use generics can emit them; consumers may treat generic type defs as opaque. No-cost inclusion for Anchor; no burden for Quasar/Codama/native. |
+| 10 | Serialization & repr hints | **Drop both.** The IDL should fully describe serialization via the type system. No `borsh` / `bytemuck` / `bytemuckunsafe` / `custom` tags; no `rust` / `c` / `transparent` / `packed` / `align` hints. If a layout needs describing, describe it. |
+| 11 | Semantic type nodes (`AmountTypeNode`, etc.) | **Supported but optional.** Producers may emit; consumers may ignore. Some client generators will use them for nicer UX. Keep the registry open — future additions don't require a spec bump. |
+| 12 | Provenance / origin field | **Structured `metadata.generator: { name, version }`.** Pins the exact generator version — useful for bug reproduction and for tools that want to apply framework-specific defaults. |
+| 13 | Remaining accounts | **Hybrid: structured when present, not required.** Presence alone signals the instruction accepts a remaining-accounts tail. When structured (name, isSigner, isWritable, docs, value source), it becomes client-generation sugar. Codama's typed list is nice but can't always be produced. |
+| 14 | Constants block | **Drop.** Any constant that matters — a PDA seed, a discriminator, a default value, a magic number — can and should be described inline where it's used. A free-floating `constants[]` array with stringly-typed values adds surface without solving a real problem. |
+| 15 | Instruction `returns` | **Keep as `returns: IdlType`.** Because the type system is expressive enough after #2/#3/#10 to describe any return shape, the field is both cheap and useful. Programs that don't return data omit it. |
+| 16 | `msg` vs `message` on errors | **`message`, optional.** Aligns with Codama and the broader JS/TS ecosystem. Not required — programs may emit error codes without human-readable messages. |
+| 17 | Key renaming | **Keep majority convention.** `writable`, `signer`, `args`, `address`, `types`. Don't adopt Codama's `is`-prefix / `definedTypes` / `publicKey` renames. Migration cost of renaming outweighs the stylistic upside. |
+| 18 | Pre/post instruction markers | **Parameterized registry in v1.** Spec enumerates a fixed set of setup ops (e.g. `createAtaIdempotent`, `createAccount`). Each entry carries structured params that reference accounts/args in the parent instruction. Bounded enough to avoid Turing-completeness; expressive enough to be actually useful. Arbitrary-CPI templates (§13.1 option 3) are explicitly out of scope. |
+| 19 | Per-signer signing templates | **The template lives on the signing account, folded into `messageSigner` itself.** An account that authorizes via message signature carries `messageSigner: { template, placeholders }` — presence of the field declares the role; there is no separate boolean + summary. A swap's maker has `messageSigner.template: "Sell X for Y to {taker}"`; the taker has `messageSigner.template: "Buy X for Y from {maker}"`. Placeholders reuse the §11 path-expression and semantic-format machinery — one mechanism, shared across `address` (#8), defaults (#4), semantic types (#11), and message-signer rendering (#20). English-only; localization is a client concern. |
+| 20 | Message signers (signed intent) | **Supported; the `messageSigner.template` IS the signing contract.** `IdlInstructionAccount.messageSigner` is an object (or absent) — not a boolean. Presence declares the account as a message signer; absence means no. Mutually exclusive with `signer: true`. Each message signer ed25519-signs the exact rendered bytes of **its own** template; the program reconstructs + verifies via the ed25519 sigverify precompile (one precompile call per message signer). Taking inspiration from EIP-712, signed bytes include a fixed domain preamble (`"Solana Signed Intent v1\nProgram: <addr>\nVersion: <ver>\nExpires: <iso8601>\n\n..."`) to prevent cross-program, cross-version, and post-expiry replay — the preamble is implicit, derived from IDL metadata and a per-signer `expiresAt` path, not hand-written. Spec pins deterministic canonical-rendering rules per semantic format so signing and verification agree byte-for-byte. Changing a signer's `template` (or bumping `metadata.version`) invalidates all prior signatures, same as changing a function signature. |
+
+### What this shape looks like
+
+Rolling the answers up: a v1 unified IDL is a **typed node tree** closer to Codama's archetype than Anchor's flat Rust-struct snapshot, but deliberately restrained. It:
+
+- Uses tagged unions everywhere (#1, #8, and elsewhere).
+- Pushes all wire-layout detail into the type system; no `serialization` / `repr` hints (#2, #3, #10).
+- Extracts PDAs to the program root (#5), optionally linked to account types.
+- Supports multi-program documents (#6).
+- Adopts `address` as an expression, drops `relations` (#8).
+- Flattens composite accounts with a `group` tag (#7).
+- Carries optional descriptive layers — contextual values (#4), semantic types (#11), structured remaining-accounts (#13), instruction summaries (#19) — that producers can opt into without affecting minimal conformance.
+- Drops the `constants` block (#14) and the `serialization` / `repr` metadata (#10).
+- Preserves Anchor-compat naming (#17), generics (#9), return types (#15).
+- Adds `metadata.generator` (#12), a parameterized pre/post-instruction registry (#18), structured error messages (#16), per-signer templates folded into `messageSigner` presence (#19), and message-signer authorization with signed-intent + EIP-712-style domain preamble + per-signer expiry (#20).
+- Reuses one path-expression and one semantic-format machinery across `address` (#8), defaults (#4), semantic type wrappers (#11), and message-signer rendering (#19/#20) — avoiding four almost-identical union definitions.
+
+The spec stays small in the required core; the optional layers carry most of the expressivity.
 
 ---
 

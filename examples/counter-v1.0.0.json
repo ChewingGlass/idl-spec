@@ -1,0 +1,121 @@
+{
+  "$schema": "../schema/v1.0.0.json",
+  "address": "D85Kq6fNENDLeyRPBdLMVXDyrkEgnq5a7vFPoscvq5bX",
+  "metadata": {
+    "name": "counter",
+    "version": "0.1.0",
+    "spec": "1.0.0",
+    "description": "Created with Anchor",
+    "generator": { "name": "anchor", "version": "0.31.0" }
+  },
+  "pdas": [
+    {
+      "name": "counter",
+      "seeds": [
+        { "type": "constant", "bytes": [99, 111, 117, 110, 116, 101, 114] },
+        { "type": "variable", "name": "authority", "valueType": "pubkey" }
+      ]
+    }
+  ],
+  "instructions": [
+    {
+      "name": "increment",
+      "discriminators": [
+        { "type": "constant", "bytes": [11, 18, 104, 9, 104, 174, 59, 33] }
+      ],
+      "accounts": [
+        {
+          "name": "counter",
+          "writable": true,
+          "default": { "type": "pda", "name": "counter" }
+        },
+        {
+          "name": "authority",
+          "address": { "type": "field", "path": "counter.authority" },
+          "messageSigner": {
+            "template": "Increment counter {counter} by {amount}",
+            "placeholders": {
+              "counter": {
+                "from": { "type": "account", "name": "counter" },
+                "format": { "type": "pubkey", "truncate": true }
+              },
+              "amount": {
+                "from": { "type": "argument", "path": "amount" }
+              }
+            }
+          },
+          "expiresAt": { "type": "argument", "path": "expiresAt" }
+        }
+      ],
+      "args": [
+        { "name": "amount", "type": "u64" },
+        { "name": "expiresAt", "type": "i64" }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminators": [
+        { "type": "constant", "bytes": [175, 175, 109, 31, 13, 152, 155, 237] }
+      ],
+      "accounts": [
+        {
+          "name": "counter",
+          "writable": true,
+          "default": { "type": "pda", "name": "counter" }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "default": { "type": "payer" }
+        },
+        {
+          "name": "systemProgram",
+          "address": { "type": "constant", "value": "11111111111111111111111111111111" }
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Counter",
+      "pda": "counter",
+      "discriminators": [
+        { "type": "constant", "bytes": [255, 176, 4, 245, 188, 253, 124, 25] }
+      ],
+      "data": {
+        "type": "struct",
+        "fields": [
+          { "name": "authority", "type": "pubkey" },
+          { "name": "count", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "CounterUpdated",
+      "discriminators": [
+        { "type": "constant", "bytes": [56, 210, 136, 13, 88, 67, 151, 167] }
+      ],
+      "data": {
+        "type": "struct",
+        "fields": [
+          { "name": "counter", "type": "pubkey" },
+          { "name": "authority", "type": "pubkey" },
+          { "name": "oldValue", "type": "u64" },
+          { "name": "newValue", "type": "u64" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Overflow",
+      "message": "Counter overflow"
+    }
+  ]
+}
