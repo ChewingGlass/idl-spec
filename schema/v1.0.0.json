@@ -88,9 +88,37 @@
           "accounts": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionAccount" } },
           "args": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlInstructionArg" }, "default": [] },
           "returns": { "$ref": "#/$defs/types/IdlType" },
-          "remainingAccounts": { "$ref": "#/$defs/instruction/IdlRemainingAccounts" },
+          "remainingAccounts": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/instruction/IdlRemainingAccountsEntry" }
+          },
           "preInstructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlPrePostIx" }, "default": [] },
-          "postInstructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlPrePostIx" }, "default": [] }
+          "postInstructions": { "type": "array", "items": { "$ref": "#/$defs/instruction/IdlPrePostIx" }, "default": [] },
+          "optionalAccountStrategy": {
+            "type": "string",
+            "enum": ["omitted", "programId"],
+            "default": "omitted"
+          },
+          "byteDeltas": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/instruction/IdlByteDelta" },
+            "default": []
+          },
+          "subInstructions": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/instruction/IdlInstruction" },
+            "default": []
+          }
+        }
+      },
+      "IdlByteDelta": {
+        "type": "object",
+        "required": ["value"],
+        "additionalProperties": false,
+        "properties": {
+          "value": { "$ref": "#/$defs/values/IdlDefaultValue" },
+          "withHeader": { "type": "boolean", "default": false },
+          "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
         }
       },
       "IdlInstructionAccount": {
@@ -102,6 +130,7 @@
           "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
           "writable": { "type": "boolean", "default": false },
           "signer": { "type": "boolean", "default": false },
+          "signerOptional": { "type": "boolean", "default": false },
           "messageSigner": { "$ref": "#/$defs/instruction/IdlMessageSigner" },
           "optional": { "type": "boolean", "default": false },
           "address": { "$ref": "#/$defs/expressions/IdlAddressExpression" },
@@ -132,28 +161,23 @@
           "name": { "type": "string" },
           "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
           "type": { "$ref": "#/$defs/types/IdlType" },
-          "default": { "$ref": "#/$defs/values/IdlDefaultValue" }
-        }
-      },
-      "IdlRemainingAccounts": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "docs": { "type": "array", "items": { "type": "string" }, "default": [] },
-          "shape": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/instruction/IdlRemainingAccountsEntry" }
+          "default": { "$ref": "#/$defs/values/IdlDefaultValue" },
+          "defaultValueStrategy": {
+            "type": "string",
+            "enum": ["omitted", "optional"],
+            "default": "omitted"
           }
         }
       },
       "IdlRemainingAccountsEntry": {
         "type": "object",
-        "required": ["name"],
         "additionalProperties": false,
         "properties": {
-          "name": { "type": "string" },
+          "value": { "$ref": "#/$defs/values/IdlDefaultValue" },
           "writable": { "type": "boolean", "default": false },
           "signer": { "type": "boolean", "default": false },
+          "signerOptional": { "type": "boolean", "default": false },
+          "optional": { "type": "boolean", "default": false },
           "docs": { "type": "array", "items": { "type": "string" }, "default": [] }
         }
       },
@@ -263,6 +287,7 @@
             "properties": {
               "type": { "const": "field" },
               "path": { "type": "string" },
+              "offset": { "type": "integer", "minimum": 0 },
               "value": {}
             }
           },
@@ -284,6 +309,7 @@
         "oneOf": [
           { "$ref": "#/$defs/types/IdlPrimitive" },
           { "$ref": "#/$defs/types/IdlTypeNumber" },
+          { "$ref": "#/$defs/types/IdlTypeBoolean" },
           { "$ref": "#/$defs/types/IdlTypeOption" },
           { "$ref": "#/$defs/types/IdlTypeArray" },
           { "$ref": "#/$defs/types/IdlTypeString" },
@@ -295,7 +321,16 @@
           { "$ref": "#/$defs/types/IdlTypeDefined" },
           { "$ref": "#/$defs/types/IdlTypeGeneric" },
           { "$ref": "#/$defs/types/IdlTypeSemantic" },
-          { "$ref": "#/$defs/types/IdlTypePadding" }
+          { "$ref": "#/$defs/types/IdlTypePadding" },
+          { "$ref": "#/$defs/types/IdlTypeFixedSize" },
+          { "$ref": "#/$defs/types/IdlTypeHiddenPrefix" },
+          { "$ref": "#/$defs/types/IdlTypeHiddenSuffix" },
+          { "$ref": "#/$defs/types/IdlTypePreOffset" },
+          { "$ref": "#/$defs/types/IdlTypePostOffset" },
+          { "$ref": "#/$defs/types/IdlTypeSentinel" },
+          { "$ref": "#/$defs/types/IdlTypeZeroableOption" },
+          { "$ref": "#/$defs/types/IdlTypeRemainderOption" },
+          { "$ref": "#/$defs/types/IdlTypeSizePrefix" }
         ]
       },
       "IdlPrimitive": {
@@ -443,6 +478,127 @@
         "properties": {
           "type": { "const": "padding" },
           "bytes": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "IdlTypeBoolean": {
+        "type": "object",
+        "required": ["type", "size"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "boolean" },
+          "size": { "$ref": "#/$defs/types/IdlTypeNumber" }
+        }
+      },
+      "IdlTypeFixedSize": {
+        "type": "object",
+        "required": ["type", "value", "size"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "fixedSize" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "size": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "IdlTypeHiddenPrefix": {
+        "type": "object",
+        "required": ["type", "value", "prefix"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "hiddenPrefix" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "prefix": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
+        }
+      },
+      "IdlTypeHiddenSuffix": {
+        "type": "object",
+        "required": ["type", "value", "suffix"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "hiddenSuffix" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "suffix": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
+        }
+      },
+      "IdlTypePreOffset": {
+        "type": "object",
+        "required": ["type", "value", "offset"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "preOffset" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "offset": { "type": "integer" },
+          "strategy": {
+            "type": "string",
+            "enum": ["padded", "absolute", "preOffset"],
+            "default": "padded"
+          }
+        }
+      },
+      "IdlTypePostOffset": {
+        "type": "object",
+        "required": ["type", "value", "offset"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "postOffset" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "offset": { "type": "integer" },
+          "strategy": {
+            "type": "string",
+            "enum": ["padded", "absolute", "preOffset"],
+            "default": "padded"
+          }
+        }
+      },
+      "IdlTypeSentinel": {
+        "type": "object",
+        "required": ["type", "value", "sentinel"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "sentinel" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "sentinel": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 255 },
+            "minItems": 1
+          }
+        }
+      },
+      "IdlTypeZeroableOption": {
+        "type": "object",
+        "required": ["type", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "zeroableOption" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "zeroValue": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+          }
+        }
+      },
+      "IdlTypeRemainderOption": {
+        "type": "object",
+        "required": ["type", "value"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "remainderOption" },
+          "value": { "$ref": "#/$defs/types/IdlType" }
+        }
+      },
+      "IdlTypeSizePrefix": {
+        "type": "object",
+        "required": ["type", "value", "prefix"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "const": "sizePrefix" },
+          "value": { "$ref": "#/$defs/types/IdlType" },
+          "prefix": { "$ref": "#/$defs/types/IdlTypeNumber" }
         }
       },
       "IdlArrayCount": {
@@ -766,7 +922,7 @@
               "name": { "type": "string" },
               "bindings": {
                 "type": "object",
-                "additionalProperties": { "$ref": "#/$defs/expressions/IdlPathExpression" }
+                "additionalProperties": { "$ref": "#/$defs/values/IdlDefaultValue" }
               }
             }
           },
@@ -800,15 +956,38 @@
           },
           {
             "type": "object",
+            "required": ["type", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "publicKey" },
+              "value": { "type": "string" },
+              "identifier": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
             "required": ["type", "name"],
             "additionalProperties": false,
             "properties": {
               "type": { "const": "resolver" },
               "name": { "type": "string" },
-              "params": {
-                "type": "object",
-                "additionalProperties": { "$ref": "#/$defs/expressions/IdlPathExpression" }
+              "dependsOn": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/values/IdlDefaultValue" },
+                "default": []
               }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "condition"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "conditional" },
+              "condition": { "$ref": "#/$defs/values/IdlDefaultValue" },
+              "value": { "$ref": "#/$defs/values/IdlDefaultValue" },
+              "ifTrue": { "$ref": "#/$defs/values/IdlDefaultValue" },
+              "ifFalse": { "$ref": "#/$defs/values/IdlDefaultValue" }
             }
           }
         ]
@@ -836,6 +1015,14 @@
             "properties": {
               "type": { "const": "constant" },
               "bytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255 } }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "const": "programId" }
             }
           },
           {
